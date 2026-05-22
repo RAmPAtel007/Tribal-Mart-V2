@@ -144,7 +144,14 @@ const Cart = () => {
                     <li key={p._id} className={`cart-row ${isBusy ? 'is-busy' : ''}`}>
                       <div className="cart-thumb">
                         {p.images && p.images[0]
-                          ? <img src={getImageUrl(p.images[0])} alt={p.title} />
+                          ? <img
+                              src={getImageUrl(p.images[0])}
+                              alt={p.title}
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.parentElement.innerHTML = '<span>🎨</span>';
+                              }}
+                            />
                           : <span>🎨</span>}
                       </div>
                       <div className="cart-meta">
