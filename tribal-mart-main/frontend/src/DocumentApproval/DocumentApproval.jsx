@@ -14,6 +14,7 @@ const DocumentApproval = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [processing, setProcessing] = useState(false);
   const [viewingDocument, setViewingDocument] = useState(null);
+  const [viewerError, setViewerError] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -194,7 +195,7 @@ const DocumentApproval = () => {
                         <span className="doc-value">{doc.businessLicense?.split('/').pop() || 'N/A'}</span>
                         <button 
                           className="view-doc-btn"
-                          onClick={() => setViewingDocument({ type: 'businessLicense', url: doc.businessLicense, name: 'Business License' })}
+                          onClick={() => { setViewerError(false); setViewingDocument({ type: 'businessLicense', url: doc.businessLicense, name: 'Business License' }); }}
                         >
                           View
                         </button>
@@ -206,7 +207,7 @@ const DocumentApproval = () => {
                         <span className="doc-value">{doc.taxCertificate?.split('/').pop() || 'N/A'}</span>
                         <button 
                           className="view-doc-btn"
-                          onClick={() => setViewingDocument({ type: 'taxCertificate', url: doc.taxCertificate, name: 'Tax Certificate' })}
+                          onClick={() => { setViewerError(false); setViewingDocument({ type: 'taxCertificate', url: doc.taxCertificate, name: 'Tax Certificate' }); }}
                         >
                           View
                         </button>
@@ -218,7 +219,7 @@ const DocumentApproval = () => {
                         <span className="doc-value">{doc.authorizationLetter?.split('/').pop() || 'N/A'}</span>
                         <button 
                           className="view-doc-btn"
-                          onClick={() => setViewingDocument({ type: 'authorizationLetter', url: doc.authorizationLetter, name: 'Authorization Letter' })}
+                          onClick={() => { setViewerError(false); setViewingDocument({ type: 'authorizationLetter', url: doc.authorizationLetter, name: 'Authorization Letter' }); }}
                         >
                           View
                         </button>
@@ -279,10 +280,29 @@ const DocumentApproval = () => {
                 </button>
               </div>
               <div className="document-display">
-                {viewingDocument.url.toLowerCase().endsWith('.pdf') ? (
+                {viewerError ? (
+                  <div style={{
+                    padding: '3rem 1.5rem',
+                    textAlign: 'center',
+                    background: '#fff7ed',
+                    border: '1px dashed #f59e0b',
+                    borderRadius: 12,
+                    color: '#7c2d12'
+                  }}>
+                    <div style={{ fontSize: '2.6rem', marginBottom: '0.6rem' }}>📂</div>
+                    <h4 style={{ margin: '0 0 0.4rem', fontFamily: 'var(--font-display, Georgia)', color: '#7c2d12' }}>
+                      File not available on the server
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5 }}>
+                      This document record exists but the underlying file is missing — likely an interrupted upload.
+                      Please ask the agency to re-upload their KYC documents.
+                    </p>
+                  </div>
+                ) : viewingDocument.url.toLowerCase().endsWith('.pdf') ? (
                   <iframe
                     src={getImageUrl(viewingDocument.url)}
                     title={viewingDocument.name}
+                    onError={() => setViewerError(true)}
                     style={{
                       width: '100%',
                       height: '500px',
@@ -294,6 +314,7 @@ const DocumentApproval = () => {
                   <img
                     src={getImageUrl(viewingDocument.url)}
                     alt={viewingDocument.name}
+                    onError={() => setViewerError(true)}
                     style={{
                       maxWidth: '100%',
                       maxHeight: '600px',

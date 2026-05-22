@@ -2,13 +2,21 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { protect, agencyOnly, adminOnly } = require('../middleware/authMiddleware');
 const documentController = require('../controllers/documentController');
+
+// Absolute path so uploads always land in backend/uploads/documents
+// regardless of the cwd the server was started from.
+const documentsDir = path.join(__dirname, '..', 'uploads', 'documents');
+if (!fs.existsSync(documentsDir)) {
+  fs.mkdirSync(documentsDir, { recursive: true });
+}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/documents/');
+    cb(null, documentsDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
