@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import api from '../services/api';
+import api, { getImageUrl } from '../services/api';
 import CustomerSidebar from '../components/CustomerSidebar';
 import './Checkout.css';
 
@@ -479,7 +479,7 @@ const Checkout = () => {
                   <div key={it.product._id} className="summary-multi-row">
                     <div className="summary-product-image" style={{ width: 56, height: 56 }}>
                       {it.product.images && it.product.images[0] ? (
-                        <img src={it.product.images[0]} alt={it.product.title} />
+                        <img src={getImageUrl(it.product.images[0])} alt={it.product.title} />
                       ) : (
                         <div className="no-image">🎨</div>
                       )}
@@ -502,8 +502,8 @@ const Checkout = () => {
               <>
                 <div className="summary-product">
                   <div className="summary-product-image">
-                    {product.images && product.images.length > 0 && product.images[0].startsWith('http') ? (
-                      <img src={product.images[0]} alt={product.title} />
+                    {product.images && product.images.length > 0 ? (
+                      <img src={getImageUrl(product.images[0])} alt={product.title} />
                     ) : (
                       <div className="no-image">📦</div>
                     )}

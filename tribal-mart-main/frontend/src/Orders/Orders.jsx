@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import api from '../services/api';
+import api, { getImageUrl } from '../services/api';
 import CustomerSidebar from '../components/CustomerSidebar';
 import './Orders.css';
 
@@ -265,7 +265,7 @@ const Orders = () => {
                       <div key={index} className="order-item">
                         <div className="item-image">
                           {item.productImage ? (
-                            <img src={item.productImage} alt={item.productTitle} />
+                            <img src={getImageUrl(item.productImage)} alt={item.productTitle} />
                           ) : (
                             <div className="no-image">📦</div>
                           )}

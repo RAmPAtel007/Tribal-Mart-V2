@@ -88,7 +88,7 @@ const AdminUserDetail = () => {
           <div className="cust-hero-profile">
             <div className="cust-profile">
               <div className="cust-avatar">
-                {u.avatarUrl ? <img src={u.avatarUrl} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : (u.name || '?').charAt(0).toUpperCase()}
+                {u.avatarUrl ? <img src={getImageUrl(u.avatarUrl)} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : (u.name || '?').charAt(0).toUpperCase()}
               </div>
               <div>
                 <div className="cust-profile-name">{u.name}</div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import api, { getImageUrl } from '../services/api';
 import CustomerSidebar from '../components/CustomerSidebar';
 import { useToast } from '../components/Toast';
 import '../Dashboard/Dashboard.css';
@@ -162,7 +162,7 @@ const Profile = () => {
             <div className="cust-profile">
               <div className="cust-avatar prof-avatar-pill">
                 {me.avatarUrl
-                  ? <img src={me.avatarUrl} alt={me.name} />
+                  ? <img src={getImageUrl(me.avatarUrl)} alt={me.name} />
                   : (me.name || '?').charAt(0).toUpperCase()}
               </div>
               <div>
@@ -178,7 +178,7 @@ const Profile = () => {
           <div className="prof-avatar-row">
             <div className="prof-avatar-big">
               {me.avatarUrl
-                ? <img src={me.avatarUrl} alt={me.name} />
+                ? <img src={getImageUrl(me.avatarUrl)} alt={me.name} />
                 : <span>{(me.name || '?').charAt(0).toUpperCase()}</span>}
             </div>
             <div className="prof-avatar-meta">

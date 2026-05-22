@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import api, { getImageUrl } from '../services/api';
 import AdminSidebar from '../components/AdminSidebar';
 import './DocumentApproval.css';
 
@@ -280,8 +280,8 @@ const DocumentApproval = () => {
               </div>
               <div className="document-display">
                 {viewingDocument.url.toLowerCase().endsWith('.pdf') ? (
-                  <iframe 
-                    src={viewingDocument.url}
+                  <iframe
+                    src={getImageUrl(viewingDocument.url)}
                     title={viewingDocument.name}
                     style={{
                       width: '100%',
@@ -291,8 +291,8 @@ const DocumentApproval = () => {
                     }}
                   />
                 ) : (
-                  <img 
-                    src={viewingDocument.url}
+                  <img
+                    src={getImageUrl(viewingDocument.url)}
                     alt={viewingDocument.name}
                     style={{
                       maxWidth: '100%',
@@ -304,8 +304,8 @@ const DocumentApproval = () => {
                 )}
               </div>
               <div className="modal-footer">
-                <a 
-                  href={viewingDocument.url}
+                <a
+                  href={getImageUrl(viewingDocument.url)}
                   download
                   className="download-btn"
                   target="_blank"

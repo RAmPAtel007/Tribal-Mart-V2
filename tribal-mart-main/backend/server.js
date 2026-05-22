@@ -11,11 +11,15 @@ dns.setServers(["8.8.8.8", "1.1.1.1"]);
 // Create uploads directories if they don't exist
 const uploadsDir = path.join(__dirname, 'uploads/documents');
 const productsDir = path.join(__dirname, 'uploads/products');
+const avatarsDir = path.join(__dirname, 'uploads/avatars');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 if (!fs.existsSync(productsDir)) {
   fs.mkdirSync(productsDir, { recursive: true });
+}
+if (!fs.existsSync(avatarsDir)) {
+  fs.mkdirSync(avatarsDir, { recursive: true });
 }
 
 const app = express();

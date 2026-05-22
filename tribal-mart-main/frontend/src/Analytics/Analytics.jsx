@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import api, { getImageUrl } from '../services/api';
 import AgencySidebar from '../components/AgencySidebar';
 import './Analytics.css';
 
@@ -247,8 +247,8 @@ const Analytics = () => {
                     topProducts.slice(0, 5).map((product, index) => (
                       <div key={product._id} className="top-product-item">
                         <div className="product-rank">#{index + 1}</div>
-                        {product.images && product.images[0] && product.images[0].startsWith('http') && (
-                          <img src={product.images[0]} alt={product.title} className="product-thumb" />
+                        {product.images && product.images[0] && (
+                          <img src={getImageUrl(product.images[0])} alt={product.title} className="product-thumb" />
                         )}
                         <div className="product-details">
                           <div className="product-title">{product.title}</div>
