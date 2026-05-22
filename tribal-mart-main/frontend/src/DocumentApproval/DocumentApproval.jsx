@@ -16,6 +16,28 @@ const DocumentApproval = () => {
   const [viewingDocument, setViewingDocument] = useState(null);
   const [viewerError, setViewerError] = useState(false);
 
+  // Proactively probe the document URL when the viewer opens — iframes
+  // don't fire onError for HTTP 404s (the server still responds with HTML),
+  // so we HEAD-check first and show the friendly fallback if the file is gone.
+  useEffect(() => {
+    if (!viewingDocument) return;
+    const url = (function getDocUrl(p) {
+      if (!p) return null;
+      if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('data:')) return p;
+      const base = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      if (p.startsWith('/')) return `${base}${p}`;
+      if (/^(businessLicense|taxCertificate|authorizationLetter)-/i.test(p)) {
+        return `${base}/uploads/documents/${p}`;
+      }
+      return `${base}/uploads/products/${p}`;
+    })(viewingDocument.url);
+    if (!url) return;
+    setViewerError(false);
+    fetch(url, { method: 'HEAD' })
+      .then((r) => { if (!r.ok) setViewerError(true); })
+      .catch(() => setViewerError(true));
+  }, [viewingDocument]);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
