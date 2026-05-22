@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import api from '../services/api';
+import { uploadMultipleToCloudinary } from '../services/cloudinary';
 import AgencySidebar from '../components/AgencySidebar';
 import AgentSidebar from '../components/AgentSidebar';
 import '../Dashboard/Dashboard.css';
@@ -126,22 +127,26 @@ const AddProduct = () => {
     }
 
     try {
-      // Create FormData for multipart file upload
-      const uploadFormData = new FormData();
-      uploadFormData.append('title', formData.title);
-      uploadFormData.append('description', formData.description);
-      uploadFormData.append('category', formData.category);
-      uploadFormData.append('originalPrice', Number(formData.originalPrice));
-      uploadFormData.append('sellingPrice', Number(formData.sellingPrice));
-      uploadFormData.append('quantity', Number(formData.quantity));
-      uploadFormData.append('condition', formData.condition);
-      if (isAgent) uploadFormData.append('agencyId', formData.agencyId);
+      // Step 1: upload all product images directly to Cloudinary
+      // (frontend → CDN). Returns array of public URLs.
+      const imageUrls = formData.images.length > 0
+        ? await uploadMultipleToCloudinary(formData.images)
+        : [];
 
-      formData.images.forEach((image) => {
-        uploadFormData.append('images', image);
-      });
+      // Step 2: send a normal JSON payload to the backend with the URLs.
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        originalPrice: Number(formData.originalPrice),
+        sellingPrice: Number(formData.sellingPrice),
+        quantity: Number(formData.quantity),
+        condition: formData.condition,
+        images: imageUrls,
+      };
+      if (isAgent) payload.agencyId = formData.agencyId;
 
-      const response = await api.post('/api/products', uploadFormData);
+      await api.post('/api/products', payload);
 
       setSuccess(isAgent
         ? 'Listed! Agency must approve before it goes to admin.'
@@ -151,7 +156,7 @@ const AddProduct = () => {
       }, 2000);
 
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add product');
+      setError(err.response?.data?.message || err.message || 'Failed to add product');
       console.error('Add product error:', err);
     } finally {
       setLoading(false);

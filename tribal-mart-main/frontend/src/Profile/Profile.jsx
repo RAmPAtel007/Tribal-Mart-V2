@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { getImageUrl } from '../services/api';
+import { uploadToCloudinary } from '../services/cloudinary';
 import CustomerSidebar from '../components/CustomerSidebar';
 import { useToast } from '../components/Toast';
 import '../Dashboard/Dashboard.css';
@@ -57,17 +58,18 @@ const Profile = () => {
     if (!file) return;
     setUploadingAvatar(true);
     try {
-      const fd = new FormData();
-      fd.append('avatar', file);
-      const res = await api.post('/api/profile/avatar', fd);
+      // Upload directly to Cloudinary, then tell the backend the URL.
+      const avatarUrl = await uploadToCloudinary(file);
+      const res = await api.put('/api/profile/me', { avatarUrl });
+      const finalUrl = res.data?.avatarUrl || avatarUrl;
       toast.success('Profile photo updated');
-      setMe((m) => ({ ...m, avatarUrl: res.data.avatarUrl }));
+      setMe((m) => ({ ...m, avatarUrl: finalUrl }));
       try {
         const stored = JSON.parse(localStorage.getItem('user') || 'null');
-        localStorage.setItem('user', JSON.stringify({ ...stored, avatarUrl: res.data.avatarUrl }));
+        localStorage.setItem('user', JSON.stringify({ ...stored, avatarUrl: finalUrl }));
       } catch (_) {}
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Avatar upload failed');
+      toast.error(err?.response?.data?.message || err?.message || 'Avatar upload failed');
     } finally {
       setUploadingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

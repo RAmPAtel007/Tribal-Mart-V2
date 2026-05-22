@@ -17,25 +17,32 @@ exports.getMyDocuments = async (req, res) => {
 };
 
 // Upload documents
+// Accepts EITHER:
+//   - JSON body  : { businessLicense, taxCertificate, authorizationLetter }  ← Cloudinary URLs
+//   - multipart  : 3 file fields (legacy path, kept for backwards compatibility)
 exports.uploadDocuments = async (req, res) => {
   try {
-    const { businessLicense, taxCertificate, authorizationLetter } = req.files || {};
+    // Prefer JSON URLs (Cloudinary flow). Fall back to multipart files.
+    let businessLicenseUrl = req.body?.businessLicense;
+    let taxCertificateUrl = req.body?.taxCertificate;
+    let authorizationLetterUrl = req.body?.authorizationLetter;
 
-    if (!businessLicense || !taxCertificate || !authorizationLetter) {
-      return res.status(400).json({ message: 'All documents are required' });
+    if (!businessLicenseUrl || !taxCertificateUrl || !authorizationLetterUrl) {
+      // Legacy multipart fallback
+      const { businessLicense, taxCertificate, authorizationLetter } = req.files || {};
+      if (!businessLicense || !taxCertificate || !authorizationLetter) {
+        return res.status(400).json({ message: 'All documents are required' });
+      }
+      const serverUrl = `${req.protocol}://${req.get('host')}`;
+      businessLicenseUrl = `${serverUrl}/uploads/documents/${businessLicense[0].filename}`;
+      taxCertificateUrl = `${serverUrl}/uploads/documents/${taxCertificate[0].filename}`;
+      authorizationLetterUrl = `${serverUrl}/uploads/documents/${authorizationLetter[0].filename}`;
     }
 
-    // Construct full URLs
-    const serverUrl = `${req.protocol}://${req.get('host')}`;
-    const businessLicenseUrl = `${serverUrl}/uploads/documents/${businessLicense[0].filename}`;
-    const taxCertificateUrl = `${serverUrl}/uploads/documents/${taxCertificate[0].filename}`;
-    const authorizationLetterUrl = `${serverUrl}/uploads/documents/${authorizationLetter[0].filename}`;
-
-    // Check if documents already exist
+    // Upsert
     let documents = await Document.findOne({ agency: req.user._id });
 
     if (documents) {
-      // Update existing documents
       documents.businessLicense = businessLicenseUrl;
       documents.taxCertificate = taxCertificateUrl;
       documents.authorizationLetter = authorizationLetterUrl;
@@ -43,7 +50,6 @@ exports.uploadDocuments = async (req, res) => {
       documents.uploadedAt = new Date();
       documents.rejectionReason = '';
     } else {
-      // Create new document record
       documents = new Document({
         agency: req.user._id,
         agencyName: req.user.name,
@@ -51,7 +57,7 @@ exports.uploadDocuments = async (req, res) => {
         businessLicense: businessLicenseUrl,
         taxCertificate: taxCertificateUrl,
         authorizationLetter: authorizationLetterUrl,
-        status: 'pending'
+        status: 'pending',
       });
     }
 
@@ -60,7 +66,7 @@ exports.uploadDocuments = async (req, res) => {
     res.json({ message: 'Documents uploaded successfully', documents });
   } catch (error) {
     console.error('Error uploading documents:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error', detail: error.message });
   }
 };
 

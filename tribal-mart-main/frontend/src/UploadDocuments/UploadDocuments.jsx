@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { uploadToCloudinary } from '../services/cloudinary';
 import AgencySidebar from '../components/AgencySidebar';
 import './UploadDocuments.css';
 
@@ -68,30 +69,41 @@ const UploadDocuments = () => {
     }
 
     setUploading(true);
-    setMessage({ type: '', text: '' });
-
-    const submitData = new FormData();
-    submitData.append('businessLicense', formData.businessLicense);
-    submitData.append('taxCertificate', formData.taxCertificate);
-    submitData.append('authorizationLetter', formData.authorizationLetter);
+    setMessage({ type: 'info', text: 'Uploading to Cloudinary…' });
 
     try {
-      const response = await api.post('/api/documents/upload', submitData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      // Step 1: upload each file directly to Cloudinary (in parallel)
+      const [businessLicenseUrl, taxCertificateUrl, authorizationLetterUrl] = await Promise.all([
+        uploadToCloudinary(formData.businessLicense),
+        uploadToCloudinary(formData.taxCertificate),
+        uploadToCloudinary(formData.authorizationLetter),
+      ]);
+
+      setMessage({ type: 'info', text: 'Saving to your agency record…' });
+
+      // Step 2: send the resulting URLs to the backend as JSON
+      await api.post('/api/documents/upload', {
+        businessLicense: businessLicenseUrl,
+        taxCertificate: taxCertificateUrl,
+        authorizationLetter: authorizationLetterUrl,
       });
+
       setMessage({ type: 'success', text: 'Documents uploaded successfully! Awaiting admin approval.' });
       setFormData({
         businessLicense: null,
         taxCertificate: null,
-        authorizationLetter: null
+        authorizationLetter: null,
       });
-      // Reset file inputs
-      document.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
+      document.querySelectorAll('input[type="file"]').forEach((input) => (input.value = ''));
       fetchDocuments();
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.message || 'Failed to upload documents. Please try again.' 
+      console.error('Document upload error:', error);
+      setMessage({
+        type: 'error',
+        text:
+          error?.response?.data?.message ||
+          error?.message ||
+          'Failed to upload documents. Please try again.',
       });
     } finally {
       setUploading(false);

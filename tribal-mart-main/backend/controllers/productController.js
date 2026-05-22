@@ -35,8 +35,19 @@ exports.addProduct = async (req, res) => {
             return res.status(403).json({ message: "Only agencies and agents can add products" });
         }
 
-        const serverUrl = `${req.protocol}://${req.get("host")}`;
-        const images = req.files ? req.files.map(file => `${serverUrl}/uploads/products/${file.filename}`) : [];
+        // Images: prefer URLs passed in JSON body (Cloudinary flow),
+        // fall back to multipart files for legacy callers.
+        let images = [];
+        if (Array.isArray(req.body.images)) {
+            // Already an array of strings (Cloudinary URLs)
+            images = req.body.images.filter(u => typeof u === 'string' && u.length > 0);
+        } else if (typeof req.body.images === 'string' && req.body.images.length > 0) {
+            // Single URL passed as string
+            images = [req.body.images];
+        } else if (req.files && req.files.length > 0) {
+            const serverUrl = `${req.protocol}://${req.get("host")}`;
+            images = req.files.map(file => `${serverUrl}/uploads/products/${file.filename}`);
+        }
 
         const product = await Product.create({
             title,
