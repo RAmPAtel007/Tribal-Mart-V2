@@ -17,6 +17,10 @@ router.get('/agency-stats', protect, agencyOnly, orderController.getAgencyOrderS
 router.put('/:id/status', protect, agencyOnly, orderController.updateOrderStatus);
 router.post('/:id/tracking', protect, agencyOnly, orderController.addTrackingUpdate);
 
+// PUBLIC: anyone (guest or logged in) can track an order by ID/number.
+// Must come BEFORE the protected `/:id` so Express matches it first.
+router.get('/track/:id', orderController.trackOrder);
+
 // Shared routes (customer or agency can view)
 router.get('/:id', protect, orderController.getOrderById);
 

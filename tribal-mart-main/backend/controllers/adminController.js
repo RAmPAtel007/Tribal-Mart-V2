@@ -590,18 +590,15 @@ exports.getFinancialSummary = async (req, res) => {
     }
 };
 
-// ── Categories management (in-memory list — backed by env / Settings collection in production) ──
-let CATEGORIES = ['Electronics', 'Furniture', 'Clothing', 'Appliances', 'Toys', 'Vehicles', 'Others'];
-exports.listCategories = async (_req, res) => res.json(CATEGORIES);
+// ── Categories management (persisted to backend/data/categories.json) ──
+const categoryStore = require('../lib/categoryStore.js');
+exports.listCategories = async (_req, res) => res.json(categoryStore.list());
 exports.addCategory = async (req, res) => {
-    const { name } = req.body || {};
-    if (!name || !name.trim()) return res.status(400).json({ message: "Name required" });
-    if (CATEGORIES.includes(name.trim())) return res.status(400).json({ message: "Already exists" });
-    CATEGORIES.push(name.trim());
-    res.json(CATEGORIES);
+    const result = categoryStore.add(req.body?.name);
+    if (result.error) return res.status(400).json({ message: result.error });
+    res.json(result.list);
 };
 exports.removeCategory = async (req, res) => {
-    CATEGORIES = CATEGORIES.filter(c => c !== req.params.name);
-    res.json(CATEGORIES);
+    res.json(categoryStore.remove(req.params.name));
 };
 

@@ -12,20 +12,17 @@ const documentsDir = path.join(__dirname, '..', 'uploads', 'documents');
 if (!fs.existsSync(documentsDir)) {
   fs.mkdirSync(documentsDir, { recursive: true });
 }
-console.log('[documentRoutes] documentsDir =', documentsDir);
-console.log('[documentRoutes] exists =', fs.existsSync(documentsDir));
 
-// Configure multer for file uploads
+// Configure multer for file uploads (legacy multipart path —
+// new uploads go through Cloudinary from the browser; this route
+// still handles incoming multipart for any older clients).
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    console.log('[multer] destination called for', file.fieldname, 'dir:', documentsDir);
     cb(null, documentsDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const finalName = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
-    console.log('[multer] filename:', finalName, '| mimetype:', file.mimetype);
-    cb(null, finalName);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
@@ -57,14 +54,12 @@ const safeUpload = (req, res, next) => {
   ]);
   handler(req, res, (err) => {
     if (err) {
-      console.error('[multer ERROR]', err.code, '-', err.message);
+      console.error('Document upload error:', err.code, err.message);
       return res.status(400).json({
         message: 'Upload failed: ' + (err.message || 'unknown error'),
         code: err.code
       });
     }
-    console.log('[multer OK] received fields:',
-      req.files ? Object.keys(req.files).map(k => `${k}=${req.files[k][0]?.filename}`).join(', ') : 'NONE');
     next();
   });
 };

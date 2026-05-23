@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
 import customerIcon from '../assets/customer-icon.svg';
@@ -143,6 +143,10 @@ const AuthPage = () => {
    ════════════════════════════════════════════════════════════ */
 const LoginPanel = ({ userType, role, onToggle }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // `?next=/path` lets callers (e.g. the chatbot) send the user here
+  // and bounce them straight to a specific page after login.
+  const nextPath = searchParams.get('next');
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -164,6 +168,12 @@ const LoginPanel = ({ userType, role, onToggle }) => {
       }
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+
+      // Safe relative-path redirect from ?next= (used by chatbot "→ My Orders")
+      if (nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')) {
+        navigate(nextPath);
+        return;
+      }
       navigate(
         userType === 'customer' ? '/dashboard/customer'
           : userType === 'admin' ? '/dashboard/admin'

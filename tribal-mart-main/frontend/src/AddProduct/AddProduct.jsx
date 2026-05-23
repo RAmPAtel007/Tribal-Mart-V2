@@ -34,7 +34,11 @@ const AddProduct = () => {
   });
   const [managedAgencies, setManagedAgencies] = useState([]);
 
-  const categories = ['Electronics', 'Furniture', 'Clothing', 'Appliances', 'Toys', 'Vehicles', 'Others'];
+  // Categories are loaded live from /api/categories so anything the
+  // admin adds in the Categories screen shows up here immediately.
+  const [categories, setCategories] = useState([
+    'Electronics', 'Furniture', 'Clothing', 'Appliances', 'Toys', 'Vehicles', 'Others',
+  ]);
   const conditions = ['New', 'Like New', 'Good', 'Fair'];
 
   useEffect(() => {
@@ -45,6 +49,18 @@ const AddProduct = () => {
     } else {
       checkVerificationStatus();
     }
+    // Load live category list (public endpoint, no auth needed)
+    api.get('/api/categories')
+      .then((res) => {
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          setCategories(res.data);
+          // If the current selection isn't in the new list, pick the first.
+          setFormData((prev) =>
+            res.data.includes(prev.category) ? prev : { ...prev, category: res.data[0] }
+          );
+        }
+      })
+      .catch((e) => console.warn('Failed to load categories, using defaults:', e?.message));
   }, []);
 
   const loadManagedAgencies = async () => {

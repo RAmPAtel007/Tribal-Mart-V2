@@ -351,6 +351,52 @@ exports.getMyOrders = async (req, res) => {
 };
 
 // Get single order details
+// Public order tracking (no auth) — returns SAFE subset only.
+// Used by the floating chatbot on the landing page so guests can
+// look up the status of an order they were given an ID for.
+exports.trackOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ message: 'Order ID is required' });
+
+    // Accept either the Mongo _id or the order number
+    let order = null;
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      order = await Order.findById(id);
+    }
+    if (!order) {
+      order = await Order.findOne({ orderNumber: id });
+    }
+    if (!order) {
+      return res.status(404).json({ message: 'No order found for that ID' });
+    }
+
+    // Return only what's safe for an anonymous lookup
+    res.json({
+      orderNumber: order.orderNumber || String(order._id),
+      orderStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus,
+      paymentMethod: order.paymentMethod,
+      placedAt: order.createdAt,
+      estimatedDelivery: order.estimatedDelivery,
+      deliveredAt: order.deliveredAt,
+      cancelledAt: order.cancelledAt,
+      items: (order.items || []).map((it) => ({
+        productTitle: it.productTitle,
+        productImage: it.productImage,
+        agencyName: it.agencyName,
+        quantity: it.quantity,
+        price: it.price,
+      })),
+      trackingUpdates: order.trackingUpdates || [],
+      totalAmount: order.totalAmount,
+    });
+  } catch (error) {
+    console.error('Track order error:', error);
+    res.status(500).json({ message: 'Failed to look up order' });
+  }
+};
+
 exports.getOrderById = async (req, res) => {
   try {
     const { id } = req.params;

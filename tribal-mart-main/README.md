@@ -19,6 +19,13 @@ Most marketplaces have **two** sides (buyer + seller). Tribal Mart introduces a 
 
 Plus a **Hindi/English instant-switch** across the entire Agency portal — because the tribal cooperatives who actually sell here speak Hindi, not English.
 
+**On top of that:**
+- 🤖 **Saathi** — an AI chatbot (powered by Gemini Flash 2.5) on every page that can track orders by ID, recommend gifts by **semantic** understanding of the shopper's intent (not keywords), and answer any platform question in EN or HI
+- 💬 **WhatsApp click-to-chat** floating button on every page, routing straight to the admin's WhatsApp with a contextual prefilled message
+- ☁️ **Cloudinary-backed media** — all uploads (product images, KYC docs, avatars) go directly to a CDN, so files work across machines, regions, and deployments out of the box
+- 💳 **Live Razorpay** integration with HMAC-verified payment confirmation, multi-item carts, and saved-address checkout
+- 📦 **Public order tracking** — anyone with an order ID can check status without logging in
+
 ---
 
 ## 🎭 Four portals, one platform
@@ -74,9 +81,20 @@ RAZORPAY_KEY_SECRET=xxxxx
 
 ```env
 VITE_API_URL=http://localhost:5000
+
+# Cloudinary — direct browser uploads (free account at cloudinary.com)
+# Create an UNSIGNED upload preset under Settings → Upload
+VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
+VITE_CLOUDINARY_PRESET=your_unsigned_preset_name
+
+# Gemini Flash 2.5 — powers the Saathi chatbot
+# Free key at https://aistudio.google.com/apikey
+VITE_GEMINI_API_KEY=your_gemini_api_key
 ```
 
 > See `backend/.env.example` and `frontend/.env.example` for templates.
+
+> **Cloudinary preset notes:** the unsigned preset must allow your file types. If you want PDF document uploads to actually deliver back, enable "Allow delivery of PDF and ZIP files" under Settings → Security in the Cloudinary console.
 
 ### 3. Seed demo data
 
@@ -122,14 +140,17 @@ Open **http://localhost:3000**.
 - **Axios** with auth interceptor for API calls
 - **Custom design system** in `src/index.css` (tribal palette, SVG pattern data-URIs, typography tokens)
 - **i18n** built from scratch (`useT()` hook + JSON dictionaries)
+- **Cloudinary** SDK-less direct upload from the browser (unsigned preset)
+- **Gemini Flash 2.5** via REST for the Saathi chatbot — semantic gift matching + free-form Q&A
 
 ### Backend
 - **Node.js** + **Express 5**
 - **MongoDB Atlas** with **Mongoose**
 - **JWT** authentication with role middleware
 - **bcryptjs** for password hashing
-- **Multer** for file uploads (product images, avatars, documents)
+- **Multer** for legacy multipart fallback (active uploads now go through Cloudinary)
 - **Razorpay SDK** for online payments
+- File-backed category store under `backend/data/` so admin-managed categories persist across restarts
 - Custom DNS resolver override (uses Google/Cloudflare DNS) for Atlas SRV lookups on networks that block them
 
 ### Design language
@@ -151,24 +172,30 @@ tribal-mart/
 │   │   ├── customerController.js
 │   │   ├── documentController.js
 │   │   ├── messageController.js
-│   │   ├── orderController.js
+│   │   ├── orderController.js     # incl. public trackOrder()
 │   │   ├── productController.js
 │   │   ├── profileController.js
 │   │   └── returnController.js
+│   ├── lib/              # Internal libs (categoryStore — file-backed persistence)
 │   ├── middleware/       # Auth + upload middleware
 │   ├── models/           # Mongoose schemas (User, Product, Order, Cart, Wishlist, Document, Message, Sale, Review, Return, AgentRequest)
-│   ├── routes/           # Express routers
-│   ├── scripts/          # seedAdmin, seedDemo
-│   ├── uploads/          # User-uploaded files (gitignored)
+│   ├── routes/           # Express routers (includes public categoryRoutes)
+│   ├── scripts/          # seedAdmin, seedDemo, test-razorpay
+│   ├── uploads/          # Legacy local upload fallback (gitignored)
+│   ├── data/             # Runtime state — categories.json (gitignored)
 │   ├── server.js
 │   ├── package.json
 │   └── .env.example
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── components/   # Shared: sidebars, NotificationBell, LanguageToggle, Toast, ReviewSection, MobileMenuToggle
+│   │   ├── components/   # Shared: sidebars, NotificationBell, LanguageToggle,
+│   │   │                 #         Toast, ReviewSection, MobileMenuToggle,
+│   │   │                 #         ChatBot (Saathi), WhatsAppButton
 │   │   ├── i18n/         # EN + HI translation dictionaries + provider
-│   │   ├── services/     # api.js (axios instance with auth interceptor)
+│   │   ├── services/     # api.js (axios + getImageUrl smart-routing),
+│   │   │                 # cloudinary.js (direct upload helper),
+│   │   │                 # gemini.js (Saathi LLM client)
 │   │   │
 │   │   ├── LandingPage/      # Public marketing site
 │   │   ├── AuthForm/         # Unified login/signup with slide animation
@@ -229,13 +256,15 @@ tribal-mart/
 
 ## 🔌 API surface (high-level)
 
-### Public
+### Public (no auth)
 - `POST /api/auth/register` · `POST /api/auth/login`
 - `GET /api/products/all` (with `?search=` `?category=` `?minPrice=` `?maxPrice=`)
 - `GET /api/products/:id`
 - `GET /api/products/store/:agencyId` — public agency storefront
 - `GET /api/products/featured/list` — featured curation
 - `GET /api/reviews/:productId`
+- `GET /api/orders/track/:id` — guest order tracking (used by the chatbot)
+- `GET /api/categories` — live category list
 
 ### Customer
 - `GET /api/customer/cart` · `POST /api/customer/cart` · `PUT /:productId` · `DELETE /:productId`
@@ -328,22 +357,28 @@ tribal-mart/
 
 ## ✨ Notable features
 
+- 🤖 **Saathi chatbot** (Gemini Flash 2.5) — semantic gift matching with per-card "why this fits" reasoning, public order tracking, EN/HI conversational support, role-aware welcome
+- 💬 **WhatsApp click-to-chat** — floating bottom-left button on every page with role-contextual prefilled messages, routes to admin
+- ☁️ **Cloudinary CDN media** — every product image, KYC document, and avatar uploads directly browser → CDN with `getImageUrl()` smart-routing on the frontend
 - 🎨 **Tribal-themed design system** — single source of truth for colors, typography, patterns
 - 🇮🇳 **Hindi/English instant switch** across the Agency portal (sidebar, dashboard, actions, stats — full translation)
 - 🃏 **Hover-driven card-shuffle animation** on the landing page (8 cards cycle through)
 - 🔔 **Role-aware notification bell** with live data
 - 🛒 **Multi-item cart** with saved-address auto-select at checkout
+- 💳 **Razorpay live integration** — UPI / cards / netbanking, HMAC-verified payment confirmation, COD fallback
 - 📦 **Order timeline** — confirmed → processing → shipped → delivered with tracking updates
+- 🔍 **Public order tracking** — guests can paste an order ID and see status, no login needed
 - 🧾 **Printable invoice + packing slip** generated from order data
 - ↩️ **Returns flow** — customer initiates, agency approves, agency marks refunded
 - ⭐ **Reviews & ratings** after delivery
 - ⚖️ **Compare up to 4 products** side-by-side
 - 🤝 **Agent system** with 5% commission tracking per managed agency
 - 💸 **Financial dashboard** for admin — GMV, commission, GST, payouts
-- 🏷️ **Category management** + featured products curation
+- 🏷️ **Live category management** — admin adds → file-backed store → instantly available in Add/Edit Product dropdowns across agency + agent portals
 - 📱 **Mobile responsive** with hamburger sidebar
 - 🎯 **Bulk approve/reject** in admin pending queue with checkboxes
 - 📨 **Toast notifications** replacing alert() everywhere
+- 🛡️ **Smart fallbacks** — HEAD-probe document viewer renders "file unavailable" gracefully if a Cloudinary asset is gated
 
 ---
 
@@ -381,11 +416,13 @@ services:
 - [ ] Replace `JWT_SECRET` with a real 32+ char secret
 - [ ] Switch Razorpay test keys → live keys (in `backend/.env`)
 - [ ] Whitelist your production server IPs in MongoDB Atlas Network Access
+- [ ] Move the Gemini key behind a backend proxy (it's currently shipped in the Vite bundle for demo simplicity)
 - [ ] Wire an email provider (SendGrid / SES) for order confirmations + password reset
-- [ ] Move `backend/uploads/` to S3 / Cloudinary (local files are wiped on every deploy)
+- [x] ~~Move `backend/uploads/` to S3 / Cloudinary~~ — **done**, Cloudinary integrated
 - [ ] Add rate limiting on `/api/auth/*` (currently open)
 - [ ] Enable HTTPS (Render gives this for free)
 - [ ] Rotate the admin password (`admin@setu.com / admin123`)
+- [ ] Replace the file-backed category store with a Mongoose `Setting` document if you scale across multiple backend instances
 
 ---
 

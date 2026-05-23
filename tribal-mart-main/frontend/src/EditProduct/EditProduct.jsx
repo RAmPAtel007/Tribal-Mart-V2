@@ -5,7 +5,7 @@ import AgencySidebar from '../components/AgencySidebar';
 import '../Dashboard/Dashboard.css';
 import '../AddProduct/AddProduct.css';
 
-const CATEGORIES   = ['Electronics', 'Furniture', 'Clothing', 'Appliances', 'Toys', 'Vehicles', 'Others'];
+const DEFAULT_CATEGORIES = ['Electronics', 'Furniture', 'Clothing', 'Appliances', 'Toys', 'Vehicles', 'Others'];
 const CONDITIONS   = ['New', 'Like New', 'Good', 'Fair'];
 
 const EditProduct = () => {
@@ -20,6 +20,16 @@ const EditProduct = () => {
     originalPrice: '', sellingPrice: '', quantity: '1', condition: 'Good',
   });
   const [existingImages, setExistingImages] = useState([]);
+  const [CATEGORIES, setCategories] = useState(DEFAULT_CATEGORIES);
+
+  useEffect(() => {
+    // Pull live categories (admin-managed list)
+    api.get('/api/categories')
+      .then((res) => {
+        if (Array.isArray(res.data) && res.data.length > 0) setCategories(res.data);
+      })
+      .catch(() => { /* fall back to defaults silently */ });
+  }, []);
 
   useEffect(() => {
     (async () => {

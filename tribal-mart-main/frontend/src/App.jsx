@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastProvider } from './components/Toast';
 import MobileMenuToggle from './components/MobileMenuToggle';
+import ChatBot from './components/ChatBot';
+import WhatsAppButton from './components/WhatsAppButton';
 import { I18nProvider } from './i18n';
 import LandingPage from './LandingPage/LandingPage';
 import AuthSelection from './AuthSelection/AuthSelection';
@@ -110,6 +112,10 @@ function App() {
         <Route path="/messages" element={<Messages />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
+      {/* Saathi — floating chatbot, available on every page */}
+      <ChatBot />
+      {/* Direct-to-admin WhatsApp shortcut (bottom-left) */}
+      <WhatsAppButton />
       </ToastProvider>
       </I18nProvider>
     </Router>

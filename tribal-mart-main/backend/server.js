@@ -45,9 +45,14 @@ app.use("/api/agents", require("./routes/agentRoutes"));
 app.use("/api/reviews", require("./routes/reviewRoutes"));
 app.use("/api/profile", require("./routes/profileRoutes"));
 app.use("/api/returns", require("./routes/returnRoutes"));
+app.use("/api/categories", require("./routes/categoryRoutes"));
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI || "mongodb+srv://ludhiyaniharsha_db_user:XqMHAji2fe020yMA@cluster0.jlditfa.mongodb.net/?appName=Cluster0")
+if (!process.env.MONGO_URI) {
+  console.error("\n✗ MONGO_URI is not set in backend/.env — see .env.example for the template.\n");
+  process.exit(1);
+}
+mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB Connected"))
 .catch(err => console.log("DB Error:", err));
 

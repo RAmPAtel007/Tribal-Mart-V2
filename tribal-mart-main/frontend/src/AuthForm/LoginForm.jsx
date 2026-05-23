@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import './AuthForm.css';
 import customerIcon from '../assets/customer-icon.svg';
@@ -9,6 +9,10 @@ import adminIcon from '../assets/admin-icon.svg';
 const LoginForm = () => {
   const navigate = useNavigate();
   const { userType } = useParams();
+  const [searchParams] = useSearchParams();
+  // `?next=/orders` lets the chatbot send guests here and bounce them
+  // straight to the page they were trying to reach (e.g. My Orders).
+  const nextPath = searchParams.get('next');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -56,8 +60,10 @@ const LoginForm = () => {
 
       console.log('Login successful:', response.data);
 
-      // Redirect to appropriate dashboard
-      if (userType === 'customer') {
+      // Honour ?next=/some/path if it's a safe relative path
+      if (nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')) {
+        navigate(nextPath);
+      } else if (userType === 'customer') {
         navigate('/dashboard/customer');
       } else if (userType === 'admin') {
         navigate('/dashboard/admin');

@@ -26,13 +26,21 @@ yarn-error.log*
 debug-*.log
 backend/debug-*.log
 
-# Uploaded user files (keep folder structure via .gitkeep)
+# Uploaded user files (kept locally as a legacy fallback;
+# new uploads go straight to Cloudinary). Keep folders via .gitkeep.
 backend/uploads/avatars/*
 backend/uploads/documents/*
 backend/uploads/products/*
 !backend/uploads/avatars/.gitkeep
 !backend/uploads/documents/.gitkeep
 !backend/uploads/products/.gitkeep
+
+# Runtime state — admin-managed category list persists here
+backend/data/
+
+# Jury-deck generator deps + scratch text files
+docs/node_modules/
+docs/_*.txt
 
 # OS files
 .DS_Store
