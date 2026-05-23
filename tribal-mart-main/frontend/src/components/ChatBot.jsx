@@ -37,7 +37,7 @@ const ChatBot = () => {
       chips: [
         { label: '📦 Track my order', value: 'track my order' },
         { label: '🎁 Gift something special', value: 'show me gifts' },
-        { label: '🛍️ Browse products', value: 'browse products' },
+        { label: '🛍️ Browse craft', value: 'browse products' },
         { label: '💬 How does this work?', value: 'How does Tribal Mart work?' },
       ],
     },
@@ -107,14 +107,10 @@ const ChatBot = () => {
         return;
       }
 
-      // 4) Browse / shop
-      if (/^(browse|shop|see products|view products|products)/i.test(text)) {
-        push({
-          from: 'bot',
-          kind: 'text',
-          text: 'Taking you to the marketplace — handpicked tribal craft awaits ✨',
-        });
-        setTimeout(() => navigate('/browse'), 600);
+      // 4) Browse / shop — show the catalogue inline, then offer a
+      // link to the full Browse Craft page (with auth-aware redirect)
+      if (/^(browse|shop|see products|view products|products|catalogue|catalog)/i.test(text)) {
+        await handleBrowse();
         return;
       }
 
@@ -319,6 +315,36 @@ ${JSON.stringify(menu)}`;
     }
   };
 
+  // "Browse products" intent: list the catalogue inline (no blank-page
+  // redirect), then a chip to open the full Browse Craft page — which
+  // routes via login if the visitor is a guest.
+  const handleBrowse = async () => {
+    try {
+      const { data } = await api.get('/api/products/all');
+      const list = (Array.isArray(data) ? data : data?.products || [])
+        .filter((p) => p.status === 'approved' && p.quantity > 0);
+
+      if (list.length === 0) {
+        push({ from: 'bot', kind: 'text', text: "We're stocking up — check back soon!" });
+        return;
+      }
+
+      push({
+        from: 'bot',
+        kind: 'text',
+        text: '🛍️ Here\'s a taste of our latest tribal craft — tap any item to explore:',
+      });
+      push({ from: 'bot', kind: 'gifts', products: pickDiverseSample(list, 8) });
+      push({
+        from: 'bot',
+        kind: 'chips',
+        chips: [{ label: '→ See all products (Browse Craft)', value: '__GOTO_BROWSE_ALL__' }],
+      });
+    } catch (err) {
+      push({ from: 'bot', kind: 'text', text: `Couldn't load products: ${err.message}` });
+    }
+  };
+
   // Pick N products spread across as many categories as possible —
   // used when the shopper hasn't said anything specific.
   const pickDiverseSample = (products, n) => {
@@ -352,6 +378,17 @@ ${JSON.stringify(menu)}`;
     }
     if (value === '__GOTO_MY_ORDERS__') {
       navigate('/orders');
+      setOpen(false);
+      return;
+    }
+    if (value === '__GOTO_BROWSE_ALL__') {
+      // Guest → log in first, then drop into Browse Craft page.
+      // Logged-in user → go straight to Browse Craft.
+      if (!isLoggedIn) {
+        navigate(`/login/customer?next=${encodeURIComponent('/browse-products')}`);
+      } else {
+        navigate('/browse-products');
+      }
       setOpen(false);
       return;
     }

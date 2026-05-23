@@ -3,6 +3,7 @@ import { ToastProvider } from './components/Toast';
 import MobileMenuToggle from './components/MobileMenuToggle';
 import ChatBot from './components/ChatBot';
 import WhatsAppButton from './components/WhatsAppButton';
+import VoiceButton from './components/VoiceButton';
 import { I18nProvider } from './i18n';
 import LandingPage from './LandingPage/LandingPage';
 import AuthSelection from './AuthSelection/AuthSelection';
@@ -116,6 +117,8 @@ function App() {
       <ChatBot />
       {/* Direct-to-admin WhatsApp shortcut (bottom-left) */}
       <WhatsAppButton />
+      {/* Vapi voice assistant (bottom-left, stacked above WhatsApp) */}
+      <VoiceButton />
       </ToastProvider>
       </I18nProvider>
     </Router>
